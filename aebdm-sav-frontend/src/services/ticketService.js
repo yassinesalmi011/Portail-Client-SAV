@@ -37,13 +37,15 @@ const assignTicket = (ticketId, assignData) => {
   // assignData sera un objet { technicienId: 123 }
   return axios.put(`${API_URL}/tickets/${ticketId}/assign`, assignData, getAuthHeaders());
 };
-
-
+const deleteTicket = (id) => {
+  return axios.delete(`${API_URL}/tickets/${id}`, getAuthHeaders());
+};
 export default {
   getTickets,
   createTicket,
   getTicketById,
   addComment,
   updateStatus,
-  assignTicket // <-- Ne pas oublier de l'exporter
+  assignTicket, // <-- Ne pas oublier de l'exporter
+  deleteTicket
 };

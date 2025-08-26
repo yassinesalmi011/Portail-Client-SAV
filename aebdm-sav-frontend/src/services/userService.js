@@ -16,8 +16,24 @@ const getAuthHeaders = () => {
 const getTechnicians = () => {
   return axios.get(`${API_URL}/users/technicians`, getAuthHeaders());
 };
+const getAllUsers = () => {
+  return axios.get(`${API_URL}/users`, getAuthHeaders());
+};
+const deleteUser = (id) => {
+  return axios.delete(`${API_URL}/users/${id}`, getAuthHeaders());
+};
+const getUserById = (id) => {
+  return axios.get(`${API_URL}/users/${id}`, getAuthHeaders());
+};
 
+const updateUser = (id, userData) => {
+  return axios.put(`${API_URL}/users/${id}`, userData, getAuthHeaders());
+};
 // On exporte la fonction pour pouvoir l'utiliser ailleurs
 export default {
-  getTechnicians
+  getTechnicians,
+  getAllUsers,
+  deleteUser,
+  getUserById,
+  updateUser
 };

@@ -53,6 +53,7 @@ public class TicketService {
     // ==========================================================
     // ===           MÉTHODE getAllTickets CORRIGÉE           ===
     // ==========================================================
+    // Dans TicketService.java
     public List<TicketDto> getAllTickets() {
         String userEmail = ((UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUsername();
         User currentUser = userRepository.findByEmail(userEmail)
@@ -60,14 +61,20 @@ public class TicketService {
 
         List<Ticket> tickets;
 
+        // --- MODIFICATION DE LA LOGIQUE ICI ---
         if (currentUser.getRole() == Role.ADMIN) {
+            // L'ADMIN voit tout
             tickets = ticketRepository.findAll();
-        } else {
+        } else if (currentUser.getRole() == Role.TECHNICIEN) {
+            // Le TECHNICIEN ne voit que les tickets qui lui sont assignés
+            tickets = ticketRepository.findByTechnicienId(currentUser.getId());
+        } else { // C'est un CLIENT
+            // Le CLIENT ne voit que ses propres tickets
             tickets = ticketRepository.findByClientId(currentUser.getId());
         }
 
         return tickets.stream()
-                .map(this::convertToDto)
+                .map(this::convertToDto) // Assurez-vous d'utiliser le bon convertisseur
                 .collect(Collectors.toList());
     }
     // NOUVELLE MÉTHODE pour récupérer un ticket par son ID
@@ -183,5 +190,12 @@ public class TicketService {
 
         Ticket updatedTicket = ticketRepository.save(ticket);
         return convertToDto(updatedTicket);
+    }
+    public void deleteTicket(Long ticketId) {
+        // On vérifie que le ticket existe avant de le supprimer pour éviter une erreur
+        if (!ticketRepository.existsById(ticketId)) {
+            throw new RuntimeException("Ticket non trouvé avec l'ID: " + ticketId);
+        }
+        ticketRepository.deleteById(ticketId);
     }
 }

@@ -5,12 +5,14 @@ import com.aebdm.savclient.dto.TicketDto;
 import com.aebdm.savclient.service.TicketService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import com.aebdm.savclient.dto.AddCommentRequest; // <-- Ne pas oublier l'import
 import com.aebdm.savclient.dto.CommentDto;
 import java.util.List;
 import com.aebdm.savclient.dto.UpdateStatusRequest; // <-- Ne pas oublier l'import
 import com.aebdm.savclient.dto.AssignTicketRequest; // <-- Import
+import org.springframework.web.bind.annotation.DeleteMapping; // Nouvel import
 
 @RestController
 @RequestMapping("/api/tickets") // Toutes les routes ici commenceront par /api/tickets
@@ -63,5 +65,12 @@ public class TicketController {
         // TODO: Sécuriser cette route pour que seul l'ADMIN puisse l'appeler
         TicketDto updatedTicket = ticketService.assignTicket(ticketId, request);
         return ResponseEntity.ok(updatedTicket);
+    }
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteTicket(@PathVariable Long id) {
+        ticketService.deleteTicket(id);
+        // La réponse standard pour une suppression réussie est 204 No Content
+        return ResponseEntity.noContent().build();
     }
 }

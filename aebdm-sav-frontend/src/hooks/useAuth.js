@@ -1,35 +1,36 @@
-import { jwtDecode } from 'jwt-decode'; // Correction de l'import
+import { jwtDecode } from "jwt-decode";
 
-// Ce "hook" est une fonction qui nous donnera facilement les infos sur l'utilisateur connecté
 export const useAuth = () => {
-  const token = localStorage.getItem('authToken');
+  const token = localStorage.getItem("authToken");
 
-  if (token) {
-    try {
-      const decodedToken = jwtDecode(token);
-      // NOTE: Assurez-vous que votre backend inclut bien le rôle dans le token !
-      // Pour l'instant, on va le déduire de l'email pour l'exemple.
-      // Idéalement, le backend devrait ajouter le rôle directement.
-      const userEmail = decodedToken.sub; // 'sub' est le champ standard pour le "subject" (l'email)
-      
-      // Logique de déduction simple (à améliorer côté backend plus tard)
-      let role = 'CLIENT';
-      if (userEmail.includes('admin')) {
-        role = 'ADMIN';
-      } else if (userEmail.includes('tech')) {
-        // Supposons qu'un email de technicien contient "tech"
-        role = 'TECHNICIEN';
-      }
-
-      return { user: { email: userEmail, role: role }, isAuthenticated: true };
-
-    } catch (error) {
-      console.error("Token invalide:", error);
-      // Si le token est invalide, on le supprime
-      localStorage.removeItem('authToken');
-      return { user: null, isAuthenticated: false };
-    }
+  if (!token) {
+    return { user: null, isAuthenticated: false };
   }
 
-  return { user: null, isAuthenticated: false };
+  try {
+    // On décode le token
+    const decodedToken = jwtDecode(token);
+
+    // On vérifie si le token a expiré
+    // La date d'expiration (exp) est en secondes, on la convertit en millisecondes
+    if (decodedToken.exp * 1000 < Date.now()) {
+      localStorage.removeItem("authToken"); // Nettoyer le token expiré
+      return { user: null, isAuthenticated: false };
+    }
+
+    // Si on arrive ici, le token est valide et non expiré
+    // On extrait les informations
+    const user = {
+      email: decodedToken.sub,
+      role: decodedToken.role, // On lit le rôle directement
+    };
+
+    return { user, isAuthenticated: true };
+
+  } catch (error) {
+    // Si le token est malformé, on le nettoie
+    console.error("Erreur de décodage du token :", error);
+    localStorage.removeItem("authToken");
+    return { user: null, isAuthenticated: false };
+  }
 };

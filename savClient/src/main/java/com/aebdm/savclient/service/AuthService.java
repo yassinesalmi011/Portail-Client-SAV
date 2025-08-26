@@ -12,6 +12,10 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+// -- NOUVEAUX IMPORTS NÉCESSAIRES --
+import java.util.HashMap;
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -21,19 +25,30 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
 
+    // La méthode register peut aussi être améliorée pour inclure le rôle
     public AuthResponse register(RegisterRequest request) {
         var user = new User();
         user.setNom(request.getNom());
+        user.setTelephone(request.getTelephone());
+        user.setFonction(request.getFonction());
+        user.setEntreprise(request.getEntreprise());
         user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword())); // Hachage du mot de passe
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(request.getRole());
 
         userRepository.save(user);
 
-        var jwtToken = jwtUtil.generateToken(user);
+        // -- AMÉLIORATION OPTIONNELLE : On ajoute aussi le rôle au token lors de l'inscription --
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", user.getRole().name());
+
+        var jwtToken = jwtUtil.generateToken(claims, user); // Utiliser la surcharge
         return AuthResponse.builder().token(jwtToken).build();
     }
 
+    // ==========================================================
+    // ===          MÉTHODE `login` MODIFIÉE ICI              ===
+    // ==========================================================
     public AuthResponse login(AuthRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -41,11 +56,21 @@ public class AuthService {
                         request.getPassword()
                 )
         );
-        // Si on arrive ici, l'utilisateur est bien authentifié
-        var user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(); // Devrait toujours exister si l'authentification a réussi
 
-        var jwtToken = jwtUtil.generateToken(user);
+        var user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow();
+
+        // 1. Créer une "Map" pour stocker les informations supplémentaires (claims)
+        Map<String, Object> claims = new HashMap<>();
+
+        // 2. Ajouter le rôle de l'utilisateur à la Map.
+        //    .name() convertit l'énumération (ex: Role.ADMIN) en chaîne de caractères ("ADMIN")
+        claims.put("role", user.getRole().name());
+
+        // 3. Appeler la méthode generateToken qui accepte les claims supplémentaires
+        var jwtToken = jwtUtil.generateToken(claims, user);
+
+        // 4. Construire et retourner la réponse
         return AuthResponse.builder().token(jwtToken).build();
     }
 }

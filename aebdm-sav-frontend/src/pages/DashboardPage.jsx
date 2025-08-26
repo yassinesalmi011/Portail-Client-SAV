@@ -1,36 +1,46 @@
-import { useState, useEffect } from 'react';
-import ticketService from '../services/ticketService'; // Importer notre service
-// En haut du fichier DashboardPage.jsx
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Container, Table, Alert, Spinner, Button } from 'react-bootstrap';
+import ticketService from '../services/ticketService';
+import { useAuth } from '../hooks/useAuth';
+
 function DashboardPage() {
-  // 1. Créer des états pour stocker les tickets, le chargement et les erreurs
+  const { user } = useAuth();
   const [tickets, setTickets] = useState([]);
-  const [loading, setLoading] = useState(true); // On commence en mode chargement
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // 2. useEffect est un hook qui s'exécute après le premier affichage du composant
+  const fetchTickets = useCallback(async () => {
+    try {
+      setLoading(true); // Remettre à true au début du fetch
+      const response = await ticketService.getTickets();
+      setTickets(response.data);
+    } catch (err) {
+      setError('Impossible de charger les tickets.');
+      console.error(err);
+    } finally {
+      setLoading(false); // Mettre à false à la fin
+    }
+  }, []); // Le tableau de dépendances vide est correct
+
   useEffect(() => {
-    // Fonction pour charger les tickets
-    const fetchTickets = async () => {
-      try {
-        const response = await ticketService.getTickets();
-        setTickets(response.data); // Mettre à jour l'état avec les tickets reçus
-      } catch (err) {
-        setError('Impossible de charger les tickets. Veuillez réessayer.');
-        console.error(err);
-      } finally {
-        setLoading(false); // Arrêter le chargement, que ça ait réussi ou non
-      }
-    };
-
     fetchTickets();
-  }, []); // Le tableau vide [] signifie que cet effet ne s'exécute qu'une seule fois
+  }, [fetchTickets]);
 
-  // 3. Gérer l'affichage conditionnel
+  const handleTicketDelete = async (ticketId) => {
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer ce ticket ?")) {
+      try {
+        await ticketService.deleteTicket(ticketId);
+        fetchTickets(); // Rafraîchir
+      } catch (err) {
+        alert("Erreur lors de la suppression du ticket.");
+      }
+    }
+  };
+
   if (loading) {
     return (
-      <Container className="text-center mt-5">
+      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
         <Spinner animation="border" role="status">
           <span className="visually-hidden">Chargement...</span>
         </Spinner>
@@ -39,47 +49,46 @@ function DashboardPage() {
   }
 
   if (error) {
-    return <Container><Alert variant="danger">{error}</Alert></Container>;
+    return <Container className="mt-4"><Alert variant="danger">{error}</Alert></Container>;
   }
 
   return (
     <Container className="mt-4">
-      <h1 className="mb-4">Tableau de Bord des Tickets</h1>
-<Link to="/tickets/new">
-      <Button variant="primary">+ Créer un Ticket</Button>
-    </Link>
-      {/* Afficher la table des tickets */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h1>Tableau de Bord des Tickets</h1>
+        {user?.role === 'CLIENT' && (
+          <Link to="/tickets/new">
+            <Button variant="primary">+ Créer un Ticket</Button>
+          </Link>
+        )}
+      </div>
       <Table striped bordered hover responsive>
         <thead>
           <tr>
-            <th>ID</th>
-            <th>Titre</th>
-            <th>Client</th>
-            <th>Statut</th>
-            <th>Date de Création</th>
+            <th>ID</th><th>Titre</th><th>Client</th><th>Statut</th><th>Date de Création</th>
+            {user?.role === 'ADMIN' && <th>Actions</th>}
           </tr>
         </thead>
         <tbody>
-          {/* Si il n'y a pas de tickets, afficher un message */}
           {tickets.length === 0 ? (
-            <tr>
-              <td colSpan="5" className="text-center">Aucun ticket à afficher.</td>
-            </tr>
+            <tr><td colSpan={user?.role === 'ADMIN' ? 6 : 5} className="text-center">Aucun ticket à afficher.</td></tr>
           ) : (
-            // Sinon, faire une boucle sur les tickets et afficher une ligne pour chacun
-            
-tickets.map(ticket => (
-  <tr key={ticket.id}>
-    <td>{ticket.id}</td>
-    {/* On transforme le titre en lien */}
-    <td>
-      <Link to={`/tickets/${ticket.id}`}>{ticket.titre}</Link>
-    </td>
-    <td>{ticket.nomClient}</td>
-    <td>{ticket.statut}</td>
-    <td>{new Date(ticket.dateCreation).toLocaleString('fr-FR')}</td>
-  </tr>
-))
+            tickets.map(ticket => (
+              <tr key={ticket.id}>
+                <td>{ticket.id}</td>
+                <td><Link to={`/tickets/${ticket.id}`}>{ticket.titre}</Link></td>
+                <td>{ticket.nomClient}</td>
+                <td>{ticket.statut}</td>
+                <td>{new Date(ticket.dateCreation).toLocaleString('fr-FR')}</td>
+                {user?.role === 'ADMIN' && (
+                  <td>
+                    <Button variant="danger" size="sm" onClick={() => handleTicketDelete(ticket.id)}>
+                      Supprimer
+                    </Button>
+                  </td>
+                )}
+              </tr>
+            ))
           )}
         </tbody>
       </Table>
