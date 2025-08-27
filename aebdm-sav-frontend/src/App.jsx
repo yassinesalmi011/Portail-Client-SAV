@@ -12,6 +12,8 @@ import Layout from './components/Layout'; // <-- S'assurer que le Layout est imp
 import UserManagementPage from './pages/UserManagementPage';
 import CreateUserPage from './pages/CreateUserPage';
 import EditUserPage from './pages/EditUserPage';
+import DashboardAdminPage from './pages/DashboardAdminPage'; // <-- Nouvel import
+
 
 function App() {
   return (
@@ -36,7 +38,14 @@ function App() {
             </ProtectedRoute>
           }
         />
-
+<Route
+  path="/admin/dashboard"
+  element={
+    <ProtectedRoute>
+      <Layout><DashboardAdminPage /></Layout>
+    </ProtectedRoute>
+  }
+/>
         <Route
           path="/tickets/new"
           element={

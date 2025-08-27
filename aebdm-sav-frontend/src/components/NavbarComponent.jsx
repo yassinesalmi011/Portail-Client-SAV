@@ -22,9 +22,13 @@ function NavbarComponent() {
         <Navbar.Collapse id="basic-navbar-nav">
           {/* On déplace la Nav à gauche */}
           <Nav className="me-auto">
-            {/* Lien vers le tableau de bord principal */}
+            {/* Lien vers le tableau de bord principal 
             <Nav.Link as={Link} to="/dashboard">Tableau de Bord</Nav.Link>
-            
+              */}
+{/* Le lien pointe vers une URL différente en fonction du rôle de l'utilisateur */}
+<Nav.Link as={Link} to={user?.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard'}>
+  Tableau de Bord
+</Nav.Link>
             {/* =========================================== */}
             {/* ===    NOUVEAU LIEN POUR L'ADMIN ICI    === */}
             {/* =========================================== */}
