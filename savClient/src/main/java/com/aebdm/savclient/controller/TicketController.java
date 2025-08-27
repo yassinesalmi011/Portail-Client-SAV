@@ -13,7 +13,8 @@ import java.util.List;
 import com.aebdm.savclient.dto.UpdateStatusRequest; // <-- Ne pas oublier l'import
 import com.aebdm.savclient.dto.AssignTicketRequest; // <-- Import
 import org.springframework.web.bind.annotation.DeleteMapping; // Nouvel import
-
+import org.springframework.web.bind.annotation.RequestParam;      // Nouvel import
+import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/tickets") // Toutes les routes ici commenceront par /api/tickets
 @RequiredArgsConstructor
@@ -24,8 +25,19 @@ public class TicketController {
     // Endpoint pour créer un nouveau ticket
     // Seuls les utilisateurs authentifiés pourront y accéder grâce à notre configuration de sécurité
     @PostMapping
-    public ResponseEntity<TicketDto> createTicket(@RequestBody CreateTicketRequest request) {
-        TicketDto createdTicket = ticketService.createTicket(request);
+    public ResponseEntity<TicketDto> createTicket(
+            @RequestParam("titre") String titre,
+            @RequestParam("description") String description,
+            @RequestParam("typeProbleme") String typeProbleme,
+            // Le fichier est optionnel
+            @RequestParam(value = "fichier", required = false) MultipartFile fichier
+    ) {
+        CreateTicketRequest request = new CreateTicketRequest();
+        request.setTitre(titre);
+        request.setDescription(description);
+        request.setTypeProbleme(typeProbleme);
+
+        TicketDto createdTicket = ticketService.createTicket(request, fichier);
         return ResponseEntity.ok(createdTicket);
     }
 

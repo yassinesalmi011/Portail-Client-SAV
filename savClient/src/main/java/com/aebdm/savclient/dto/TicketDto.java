@@ -16,6 +16,7 @@ public class TicketDto {
     private LocalDateTime dateCreation;
     private String nomClient; // On va afficher le nom, pas l'ID
     private String nomTechnicien; // Peut être null
+    private String nomFichier; // <-- AJOUTER
     private List<CommentDto> comments; // <-- AJOUTEZ CETTE LIGNE
 
 }

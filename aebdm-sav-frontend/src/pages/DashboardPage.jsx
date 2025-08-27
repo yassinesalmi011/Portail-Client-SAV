@@ -27,6 +27,26 @@ function DashboardPage() {
     fetchTickets();
   }, [fetchTickets]);
 
+  const handleFileDownload = async (fileName) => {
+  try {
+    const response = await ticketService.downloadFile(fileName);
+    
+    // --- MODIFICATION IMPORTANTE ICI ---
+    // On essaie de deviner le type de contenu à partir de l'en-tête de la réponse
+    const contentType = response.headers['content-type'];
+
+    // On crée le Blob en spécifiant le type de contenu
+    const blob = new Blob([response.data], { type: contentType });
+    const fileURL = URL.createObjectURL(blob);
+    // --- FIN DE LA MODIFICATION ---
+
+    window.open(fileURL, '_blank');
+    
+  } catch (error) {
+    console.error("Erreur lors du téléchargement du fichier:", error);
+    alert("Impossible de télécharger le fichier.");
+  }
+};
   const handleTicketDelete = async (ticketId) => {
     if (window.confirm("Êtes-vous sûr de vouloir supprimer ce ticket ?")) {
       try {
@@ -65,7 +85,7 @@ function DashboardPage() {
       <Table striped bordered hover responsive>
         <thead>
           <tr>
-            <th>ID</th><th>Titre</th><th>Client</th><th>Statut</th><th>Date de Création</th>
+            <th>ID</th><th>Titre</th><th>Client</th><th>Statut</th><th>Date de Création</th> <th>Pièce Jointe</th>
             {user?.role === 'ADMIN' && <th>Actions</th>}
           </tr>
         </thead>
@@ -80,6 +100,18 @@ function DashboardPage() {
                 <td>{ticket.nomClient}</td>
                 <td>{ticket.statut}</td>
                 <td>{new Date(ticket.dateCreation).toLocaleString('fr-FR')}</td>
+                 <td>
+         {/* On affiche le lien SEULEMENT si un nom de fichier existe */}
+      {ticket.nomFichier && (
+    <Button
+      variant="link" // Pour qu'il ressemble à un lien
+      size="sm"
+      onClick={() => handleFileDownload(ticket.nomFichier)}
+    >
+      Voir Fichier
+    </Button>
+  )}
+    </td>
                 {user?.role === 'ADMIN' && (
                   <td>
                     <Button variant="danger" size="sm" onClick={() => handleTicketDelete(ticket.id)}>

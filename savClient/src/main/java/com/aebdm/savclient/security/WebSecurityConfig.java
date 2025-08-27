@@ -29,7 +29,11 @@ public class WebSecurityConfig {
                 .cors(Customizer.withDefaults()) // <-- LA LIGJE MAGIQUE À AJOUTER
 
                 .authorizeHttpRequests(auth -> auth
+                        // Autoriser l'accès public à la page de login/register
                         .requestMatchers("/api/auth/**").permitAll()
+                        // On protège le nouvel endpoint des fichiers
+                        .requestMatchers("/api/files/**").authenticated()
+                        // Toutes les autres requêtes nécessitent une authentification
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.web.multipart.MultipartFile; // Nouvel import
 
 @Service
 @RequiredArgsConstructor
@@ -25,11 +26,12 @@ public class TicketService {
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository; // <-- INJECTION AJOUTÉE
     private final CommentRepository commentRepository; // <-- LIGNE À AJOUTER
+    private final FileStorageService fileStorageService; // <-- INJECTION
 
     // ==========================================================
     // ===            MÉTHODE createTicket CORRIGÉE           ===
     // ==========================================================
-    public TicketDto createTicket(CreateTicketRequest request) {
+    public TicketDto createTicket(CreateTicketRequest request, MultipartFile fichier) {
         // 1. Récupérer le nom de l'utilisateur connecté (son email)
         String userEmail = ((UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUsername();
 
@@ -44,6 +46,12 @@ public class TicketService {
         ticket.setTypeProbleme(request.getTypeProbleme());
         ticket.setStatut(StatutTicket.OUVERT);
         ticket.setDateCreation(LocalDateTime.now());
+        // --- AJOUT DE LA LOGIQUE FICHIER ---
+        if (fichier != null && !fichier.isEmpty()) {
+            String fileName = fileStorageService.storeFile(fichier);
+            ticket.setNomFichier(fileName);
+        }
+        // --- FIN DE LA LOGIQUE FICHIER ---
         ticket.setClient(currentUser);
 
         Ticket savedTicket = ticketRepository.save(ticket);
@@ -102,6 +110,7 @@ public class TicketService {
         if (ticket.getTechnicien() != null) {
             dto.setNomTechnicien(ticket.getTechnicien().getNom());
         }
+        dto.setNomFichier(ticket.getNomFichier()); // <-- AJOUTER
 
         // Conversion des commentaires
         if (ticket.getComments() != null) {

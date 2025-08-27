@@ -6,6 +6,7 @@ function CreateTicketPage() {
   const [titre, setTitre] = useState('');
   const [description, setDescription] = useState('');
   const [typeProbleme, setTypeProbleme] = useState('');
+  const [file, setFile] = useState(null); // <-- NOUVEL ÉTAT
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -18,11 +19,11 @@ function CreateTicketPage() {
 
   try {
     const ticketData = { titre, description, typeProbleme };
-    await ticketService.createTicket(ticketData);
-
+     await ticketService.createTicket(ticketData, file); 
+    
     // Si l'appel réussit, on redirige vers le tableau de bord
     navigate('/dashboard');
-
+ setTimeout(() => window.location.reload(), 100); 
   } catch (err) {
     setError('Erreur lors de la création du ticket. Veuillez réessayer.');
     console.error(err);
@@ -73,6 +74,10 @@ function CreateTicketPage() {
               />
             </Form.Group>
 
+<Form.Group className="mb-3">
+  <Form.Label>Pièce Jointe (optionnel)</Form.Label>
+  <Form.Control type="file" onChange={(e) => setFile(e.target.files[0])} />
+</Form.Group>
             <div className="d-flex justify-content-end">
               <Button variant="secondary" onClick={() => navigate('/dashboard')} className="me-2">
                 Annuler
