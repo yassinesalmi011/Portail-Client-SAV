@@ -27,7 +27,7 @@ public class TicketService {
     private final UserRepository userRepository; // <-- INJECTION AJOUTÉE
     private final CommentRepository commentRepository; // <-- LIGNE À AJOUTER
     private final FileStorageService fileStorageService; // <-- INJECTION
-
+    private final EmailService emailService;
     // ==========================================================
     // ===            MÉTHODE createTicket CORRIGÉE           ===
     // ==========================================================
@@ -150,6 +150,31 @@ public class TicketService {
         // 4. Sauvegarder le commentaire
         Comment savedComment = commentRepository.save(comment);
 
+        // ==========================================================
+        // ===         LOGIQUE DE NOTIFICATION AJOUTÉE ICI        ===
+        // ==========================================================
+        String subject = "Nouveau commentaire sur votre ticket #" + ticket.getId() + " : " + ticket.getTitre();
+        String textTemplate = "Bonjour %s,\n\n" +
+                "Un nouveau commentaire a été ajouté au ticket '" + ticket.getTitre() + "' par " + currentUser.getNom() + ".\n\n" +
+                "Contenu du message :\n\"" + savedComment.getMessage() + "\"\n\n" +
+                "Vous pouvez répondre en vous connectant au portail SAV.\n\n" +
+                "Cordialement,\nL'équipe de support AEBDM.";
+
+        // Qui notifier ?
+        // Si l'auteur du commentaire est le client, on notifie le technicien assigné (s'il y en a un).
+        if (currentUser.getRole() == Role.CLIENT && ticket.getTechnicien() != null) {
+            String textPourTechnicien = String.format(textTemplate, ticket.getTechnicien().getNom());
+            emailService.sendSimpleMessage(ticket.getTechnicien().getEmail(), subject, textPourTechnicien);
+        }
+        // Si l'auteur est un technicien ou un admin, on notifie le client.
+        else if (currentUser.getRole() == Role.TECHNICIEN || currentUser.getRole() == Role.ADMIN) {
+            String textPourClient = String.format(textTemplate, ticket.getClient().getNom());
+            emailService.sendSimpleMessage(ticket.getClient().getEmail(), subject, textPourClient);
+        }
+        // Note : On pourrait aussi notifier l'admin dans tous les cas si nécessaire.
+        // --- FIN DE LA LOGIQUE DE NOTIFICATION ---
+
+
         // 5. Convertir le commentaire sauvegardé en DTO pour le renvoyer
         CommentDto commentDto = new CommentDto();
         commentDto.setId(savedComment.getId());
@@ -159,7 +184,9 @@ public class TicketService {
 
         return commentDto;
     }
-    public TicketDto updateTicketStatus(Long ticketId, UpdateStatusRequest request) {
+    // Dans TicketService.java
+
+    public TicketDto updateTicketStatus(Long ticketId, UpdateStatusRequest request) { // <-- Le nom a été corrigé ici
         // 1. Récupérer le ticket
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new RuntimeException("Ticket non trouvé"));
@@ -169,18 +196,38 @@ public class TicketService {
         User currentUser = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
-        // 3. Vérification de sécurité : Seul un ADMIN ou le TECHNICIEN assigné peut changer le statut
+        // 3. Vérification de sécurité
         if (currentUser.getRole() != Role.ADMIN &&
                 (ticket.getTechnicien() == null || !ticket.getTechnicien().getId().equals(currentUser.getId()))) {
             throw new IllegalStateException("Vous n'avez pas la permission de modifier ce ticket.");
         }
 
+        StatutTicket ancienStatut = ticket.getStatut();
+
         // 4. Mettre à jour le statut et sauvegarder
-        ticket.setStatut(request.getStatut());
+        ticket.setStatut(request.getStatut()); // Cette ligne est maintenant correcte
         Ticket updatedTicket = ticketRepository.save(ticket);
 
-        // 5. Renvoyer le ticket mis à jour
-        return convertToDto(updatedTicket); // On utilise notre convertisseur existant
+        // 5. Logique de notification
+        if (ancienStatut != updatedTicket.getStatut()) {
+            String subject = "Mise à jour de votre ticket #" + updatedTicket.getId() + " : " + updatedTicket.getTitre();
+            String textPourClient = "Bonjour " + updatedTicket.getClient().getNom() + ",\n\n" +
+                    "Le statut de votre ticket a été mis à jour par " + currentUser.getNom() + ".\n" +
+                    "Nouveau statut : " + updatedTicket.getStatut() + ".\n\n" +
+                    "Cordialement,\nL'équipe de support AEBDM.";
+            emailService.sendSimpleMessage(updatedTicket.getClient().getEmail(), subject, textPourClient);
+
+            if (updatedTicket.getTechnicien() != null) {
+                String textPourTechnicien = "Bonjour " + updatedTicket.getTechnicien().getNom() + ",\n\n" +
+                        "Le statut du ticket #" + updatedTicket.getId() + " a été mis à jour par " + currentUser.getNom() + ".\n" +
+                        "Nouveau statut : " + updatedTicket.getStatut() + ".\n\n" +
+                        "Cordialement,\nLe système de portail SAV.";
+                emailService.sendSimpleMessage(updatedTicket.getTechnicien().getEmail(), subject, textPourTechnicien);
+            }
+        }
+
+        // 6. Renvoyer le ticket mis à jour
+        return convertToDto(updatedTicket);
     }
     public TicketDto assignTicket(Long ticketId, AssignTicketRequest request) {
         Ticket ticket = ticketRepository.findById(ticketId)
