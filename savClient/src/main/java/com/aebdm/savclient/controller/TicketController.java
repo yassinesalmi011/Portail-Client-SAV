@@ -2,6 +2,7 @@ package com.aebdm.savclient.controller;
 
 import com.aebdm.savclient.dto.CreateTicketRequest;
 import com.aebdm.savclient.dto.TicketDto;
+import com.aebdm.savclient.enums.StatutTicket;
 import com.aebdm.savclient.service.TicketService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -44,8 +45,11 @@ public class TicketController {
     // Endpoint pour récupérer les tickets
     // La logique dans le service décidera quoi renvoyer en fonction du rôle
     @GetMapping
-    public ResponseEntity<List<TicketDto>> getAllTickets() {
-        List<TicketDto> tickets = ticketService.getAllTickets();
+    public ResponseEntity<List<TicketDto>> getAllTickets(
+            @RequestParam(required = false) String searchTerm,
+            @RequestParam(required = false) StatutTicket statut
+    ) {
+        List<TicketDto> tickets = ticketService.getAllTickets(searchTerm, statut);
         return ResponseEntity.ok(tickets);
     }
     @GetMapping("/{id}")

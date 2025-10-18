@@ -1,92 +1,88 @@
 import { useState } from 'react';
-import { Container, Form, Button, Row, Col, Alert, Spinner } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
-import ticketService from '../services/ticketService';  
+import { Container, Form, Button, Row, Col, Card, Alert, Spinner } from 'react-bootstrap';
+import { useNavigate, Link } from 'react-router-dom';
+import { ArrowLeft } from 'react-bootstrap-icons';
+import ticketService from '../services/ticketService';
+import { useAuth } from '../hooks/useAuth'; // On en aura besoin pour la redirection
+
 function CreateTicketPage() {
+  const { user } = useAuth();
   const [titre, setTitre] = useState('');
   const [description, setDescription] = useState('');
   const [typeProbleme, setTypeProbleme] = useState('');
-  const [file, setFile] = useState(null); // <-- NOUVEL ÉTAT
+  const [file, setFile] = useState(null);
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setError('');
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError('');
+    try {
+      const ticketData = { titre, description, typeProbleme };
+      await ticketService.createTicket(ticketData, file);
+      // On redirige vers le bon tableau de bord
+      const dashboardUrl = user?.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard';
+      navigate(dashboardUrl);
+    } catch (err) {
+      setError("Erreur lors de la création du ticket. Veuillez réessayer.");
+      setIsSubmitting(false);
+    }
+  };
 
-  try {
-    const ticketData = { titre, description, typeProbleme };
-     await ticketService.createTicket(ticketData, file); 
-    
-    // Si l'appel réussit, on redirige vers le tableau de bord
-    navigate('/dashboard');
- setTimeout(() => window.location.reload(), 100); 
-  } catch (err) {
-    setError('Erreur lors de la création du ticket. Veuillez réessayer.');
-    console.error(err);
-    setLoading(false);
-  }
-};
+  const dashboardUrl = user?.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard';
 
   return (
-    <Container className="mt-5">
-      <Row className="justify-content-md-center">
-        <Col xs={12} md={8}>
-          <h2 className="text-center mb-4">Créer un Nouveau Ticket</h2>
+    <Container className="py-4">
+      <Row className="justify-content-center">
+        <Col lg={8} md={10}>
+          <Link to={dashboardUrl}>
+            <Button variant="outline-secondary" className="mb-3 d-flex align-items-center">
+              <ArrowLeft className="me-2" />
+              Annuler et Retourner au Tableau de Bord
+            </Button>
+          </Link>
+          <Card className="shadow-sm">
+            <Card.Header as="h3" className="fw-normal">
+              Signaler un nouveau problème
+            </Card.Header>
+            <Card.Body className="p-4">
+              {error && <Alert variant="danger">{error}</Alert>}
+              <Form onSubmit={handleSubmit}>
+                <Row>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Titre du problème</Form.Label>
+                      <Form.Control type="text" placeholder="Ex: Impossible d'imprimer" value={titre} onChange={(e) => setTitre(e.target.value)} required />
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Type de problème</Form.Label>
+                      <Form.Control type="text" placeholder="Ex: Matériel, Logiciel, Réseau..." value={typeProbleme} onChange={(e) => setTypeProbleme(e.target.value)} required />
+                    </Form.Group>
+                  </Col>
+                </Row>
 
-          {error && <Alert variant="danger">{error}</Alert>}
+                <Form.Group className="mb-3">
+                  <Form.Label>Description détaillée</Form.Label>
+                  <Form.Control as="textarea" rows={5} placeholder="Veuillez décrire le problème le plus précisément possible, incluant les messages d'erreur éventuels..." value={description} onChange={(e) => setDescription(e.target.value)} required />
+                </Form.Group>
 
-          <Form onSubmit={handleSubmit}>
-            <Form.Group className="mb-3">
-              <Form.Label>Titre du problème</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Ex: Impossible d'imprimer"
-                value={titre}
-                onChange={(e) => setTitre(e.target.value)}
-                required
-              />
-            </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Pièce Jointe (optionnel)</Form.Label>
+                  <Form.Control type="file" onChange={(e) => setFile(e.target.files[0])} />
+                </Form.Group>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Type de problème</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Ex: Matériel, Logiciel, Réseau..."
-                value={typeProbleme}
-                onChange={(e) => setTypeProbleme(e.target.value)}
-                required
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Description détaillée</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={4}
-                placeholder="Veuillez décrire le problème le plus précisément possible..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                required
-              />
-            </Form.Group>
-
-<Form.Group className="mb-3">
-  <Form.Label>Pièce Jointe (optionnel)</Form.Label>
-  <Form.Control type="file" onChange={(e) => setFile(e.target.files[0])} />
-</Form.Group>
-            <div className="d-flex justify-content-end">
-              <Button variant="secondary" onClick={() => navigate('/dashboard')} className="me-2">
-                Annuler
-              </Button>
-              <Button variant="primary" type="submit" disabled={loading}>
-                {loading ? <Spinner as="span" animation="border" size="sm" /> : 'Créer le Ticket'}
-              </Button>
-            </div>
-          </Form>
+                <div className="text-end">
+                  <Button variant="primary" type="submit" disabled={isSubmitting} size="lg">
+                    {isSubmitting ? <Spinner as="span" animation="border" size="sm" /> : 'Soumettre le Ticket'}
+                  </Button>
+                </div>
+              </Form>
+            </Card.Body>
+          </Card>
         </Col>
       </Row>
     </Container>

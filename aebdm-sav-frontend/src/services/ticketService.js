@@ -10,8 +10,9 @@ const getAuthHeaders = () => {
   return {};
 };
 
-const getTickets = () => {
-  return axios.get(`${API_URL}/tickets`, getAuthHeaders());
+const getTickets = (params) => {
+  // params sera un objet comme { searchTerm: 'imprimante', statut: 'OUVERT' }
+  return axios.get(`${API_URL}/tickets`, { params, ...getAuthHeaders() });
 };
 
 /*const createTicket = (ticketData) => {

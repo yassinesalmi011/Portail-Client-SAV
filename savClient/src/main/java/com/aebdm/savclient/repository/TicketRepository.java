@@ -2,11 +2,12 @@ package com.aebdm.savclient.repository;
 
 import com.aebdm.savclient.entity.Ticket;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor; // Nouvel import
 
 import java.util.List;
 import com.aebdm.savclient.enums.StatutTicket; // Nouvel import
 import org.springframework.data.jpa.repository.Query;   // Nouvel import
-public interface TicketRepository extends JpaRepository<Ticket, Long> {
+public interface TicketRepository extends JpaRepository<Ticket, Long>, JpaSpecificationExecutor<Ticket> {
     List<Ticket> findByClientId(Long clientId);
     // Dans TicketRepository.java
     List<Ticket> findByTechnicienId(Long technicienId);

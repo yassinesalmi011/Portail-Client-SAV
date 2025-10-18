@@ -15,9 +15,13 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.web.multipart.MultipartFile; // Nouvel import
+import com.aebdm.savclient.enums.StatutTicket;
+import org.springframework.data.jpa.domain.Specification;
+import com.aebdm.savclient.repository.specs.TicketSpecifications; // Nouvel import
 
 @Service
 @RequiredArgsConstructor
@@ -62,27 +66,39 @@ public class TicketService {
     // ===           MÉTHODE getAllTickets CORRIGÉE           ===
     // ==========================================================
     // Dans TicketService.java
-    public List<TicketDto> getAllTickets() {
+    public List<TicketDto> getAllTickets(String searchTerm, StatutTicket statut) {
         String userEmail = ((UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUsername();
         User currentUser = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
-        List<Ticket> tickets;
+        // --- NOUVELLE APPROCHE SANS MÉTHODE DÉPRÉCIÉE ---
 
-        // --- MODIFICATION DE LA LOGIQUE ICI ---
-        if (currentUser.getRole() == Role.ADMIN) {
-            // L'ADMIN voit tout
-            tickets = ticketRepository.findAll();
-        } else if (currentUser.getRole() == Role.TECHNICIEN) {
-            // Le TECHNICIEN ne voit que les tickets qui lui sont assignés
-            tickets = ticketRepository.findByTechnicienId(currentUser.getId());
-        } else { // C'est un CLIENT
-            // Le CLIENT ne voit que ses propres tickets
-            tickets = ticketRepository.findByClientId(currentUser.getId());
+        // 1. On crée une liste de toutes nos conditions (spécifications)
+        List<Specification<Ticket>> specs = new ArrayList<>();
+
+        // 2. On ajoute les conditions nécessaires à la liste
+        if (currentUser.getRole() == Role.TECHNICIEN) {
+            specs.add(TicketSpecifications.hasTechnician(currentUser));
+        } else if (currentUser.getRole() == Role.CLIENT) {
+            specs.add(TicketSpecifications.hasClient(currentUser));
         }
 
+        if (statut != null) {
+            specs.add(TicketSpecifications.hasStatus(statut));
+        }
+
+        if (searchTerm != null && !searchTerm.isBlank()) {
+            specs.add(TicketSpecifications.containsSearchTerm(searchTerm));
+        }
+
+        // 3. On combine toutes les spécifications de la liste avec un "AND"
+        Specification<Ticket> finalSpec = specs.stream().reduce(Specification::and).orElse(null);
+
+        // 4. On exécute la requête avec la spécification finale
+        List<Ticket> tickets = ticketRepository.findAll(finalSpec);
+
         return tickets.stream()
-                .map(this::convertToDto) // Assurez-vous d'utiliser le bon convertisseur
+                .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
     // NOUVELLE MÉTHODE pour récupérer un ticket par son ID
@@ -129,12 +145,11 @@ public class TicketService {
     // ... dans TicketService.java
 
     public CommentDto addCommentToTicket(Long ticketId, AddCommentRequest request) {
-        // 1. Récupérer l'utilisateur connecté
+// 1. Récupérer l'utilisateur connecté
         String userEmail = ((UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUsername();
         User currentUser = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
-
-        // 2. Récupérer le ticket
+// 2. Récupérer le ticket
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new RuntimeException("Ticket non trouvé"));
 
@@ -184,7 +199,7 @@ public class TicketService {
 
         return commentDto;
     }
-    // Dans TicketService.java
+// Dans TicketService.java
 
     public TicketDto updateTicketStatus(Long ticketId, UpdateStatusRequest request) { // <-- Le nom a été corrigé ici
         // 1. Récupérer le ticket

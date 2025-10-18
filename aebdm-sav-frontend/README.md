@@ -1,12 +1,60 @@
-# React + Vite
+# Portail Client SAV - Frontend (React)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Ce projet constitue la partie frontend (interface utilisateur) de l'application "Portail Client SAV". Développée avec React, c'est une Single Page Application (SPA) qui communique avec l'API backend pour offrir une expérience utilisateur fluide et réactive.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Fonctionnalités Clés
 
-## Expanding the ESLint configuration
+- **Interface Intuitive et Moderne :** Design professionnel et responsive grâce à **React-Bootstrap**.
+- **Navigation Protégée :** Routage géré par **React Router DOM** avec des routes protégées pour les utilisateurs authentifiés.
+- **Affichage Dynamique par Rôle :** L'interface s'adapte en temps réel pour afficher les menus et les actions autorisées pour le Client, le Technicien ou l'Administrateur.
+- **Tableaux de Bord :**
+  - Dashboard principal avec **recherche et filtrage** dynamiques.
+  - Dashboard **statistique** pour l'admin avec des graphiques interactifs (Chart.js).
+- **CRUD Complet :** Interfaces pour gérer les tickets (création, détail) et les utilisateurs (création, modification, suppression).
+- **Interactivité :** Mises à jour instantanées de l'interface après une action, et gestion de l'upload de fichiers.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+## 🛠️ Pile Technologique
+
+- **Bibliothèque :** React
+- **Outil de Build :** Vite
+- **Routage :** React Router DOM
+- **Client HTTP :** Axios
+- **Design & Composants :** React-Bootstrap, React-Bootstrap-Icons
+- **Graphiques :** Chart.js, react-chartjs-2
+- **Gestion des Paquets :** npm
+
+---
+
+## 🚀 Démarrage Rapide
+
+### Prérequis
+
+- Node.js (version 18 ou supérieure) et npm
+- Le **serveur backend doit être en cours d'exécution** pour que l'application puisse fonctionner.
+
+### Lancement
+
+1.  **Clonez le dépôt :**
+    ```bash
+    git clone [URL_DE_VOTRE_DEPOT_FRONTEND]
+    cd aebdm-sav-frontend
+    ```
+2.  **Installez les dépendances :**
+    ```bash
+    npm install
+    ```
+3.  **Démarrez le serveur de développement :**
+    ```bash
+    npm run dev
+    ```
+    - L'application sera accessible par défaut à l'adresse `http://localhost:5173`.
+
+---
+
+## Auteur
+
+- **SALMI Yassine** - [LinkedIn](https://linkedin.com/in/yassinesalmi)

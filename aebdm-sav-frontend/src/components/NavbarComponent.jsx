@@ -1,4 +1,4 @@
-import { Navbar, Nav, Button, Container } from 'react-bootstrap';
+import { Navbar, Nav, Button, Container, NavDropdown   } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
@@ -6,48 +6,46 @@ function NavbarComponent() {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    navigate('/login');
-    // On peut souvent se passer du reload si la gestion d'état est bonne,
-    // mais pour ce projet, c'est une solution simple et efficace.
-    window.location.reload(); 
-  };
-
+const handleLogout = () => { localStorage.removeItem('authToken'); navigate('/login'); window.location.reload(); };
   return (
-    <Navbar bg="dark" variant="dark" expand="lg" className="mb-4"> {/* Ajout d'une marge en bas */}
-      <Container>
-        <Navbar.Brand as={Link} to="/dashboard">Portail SAV AEBDM</Navbar.Brand>
+    <Navbar bg="light" variant="light" expand="lg" className="border-bottom" style={{ boxShadow: '0 2px 4px rgba(0,0,0,.04)' }}>
+      <Container fluid className="px-4">
+        <Navbar.Brand as={Link} to={user?.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard'} className="fw-bold">
+          <img alt="Logo" src="/logo.png" width="30" height="30" className="d-inline-block align-top me-2"/>
+          Portail SAV AEBDM
+        </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
-          {/* On déplace la Nav à gauche */}
+          
+          {/* ========================================================== */}
+          {/* ===       LOGIQUE DE NAVIGATION AMÉLIORÉE ICI          === */}
+          {/* ========================================================== */}
           <Nav className="me-auto">
-            {/* Lien vers le tableau de bord principal 
-            <Nav.Link as={Link} to="/dashboard">Tableau de Bord</Nav.Link>
-              */}
-{/* Le lien pointe vers une URL différente en fonction du rôle de l'utilisateur */}
-<Nav.Link as={Link} to={user?.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard'}>
-  Tableau de Bord
-</Nav.Link>
-            {/* =========================================== */}
-            {/* ===    NOUVEAU LIEN POUR L'ADMIN ICI    === */}
-            {/* =========================================== */}
-            {/* Ce lien ne s'affiche que si l'utilisateur est connecté ET a le rôle ADMIN */}
+            {/* Si l'utilisateur est un ADMIN, on affiche un menu déroulant */}
+            {isAuthenticated && user?.role === 'ADMIN' ? (
+              <NavDropdown title="Tableaux de Bord" id="admin-dashboard-dropdown">
+                <NavDropdown.Item as={Link} to="/admin/dashboard">Vue Statistique</NavDropdown.Item>
+                <NavDropdown.Item as={Link} to="/dashboard">Liste des Tickets</NavDropdown.Item>
+              </NavDropdown>
+            ) : (
+              // Sinon, on affiche le lien simple
+              <Nav.Link as={Link} to="/dashboard">Tableau de Bord</Nav.Link>
+            )}
+
+            {/* Le lien "Gestion Utilisateurs" ne change pas */}
             {isAuthenticated && user?.role === 'ADMIN' && (
-              <Nav.Link as={Link} to="/admin/users">
-                Gestion Utilisateurs
-              </Nav.Link>
+              <Nav.Link as={Link} to="/admin/users">Gestion Utilisateurs</Nav.Link>
             )}
           </Nav>
           
-          {/* Section de droite pour l'utilisateur et la déconnexion */}
+          {/* --- Informations utilisateur à droite --- */}
           <Nav>
             {isAuthenticated ? (
               <>
                 <Navbar.Text className="me-3">
-                  {user.email} ({user.role}) {/* On peut aussi afficher le rôle */}
+                  Connecté : <strong>{user.email}</strong> ({user.role})
                 </Navbar.Text>
-                <Button variant="outline-light" onClick={handleLogout}>Déconnexion</Button>
+                <Button variant="outline-secondary" onClick={handleLogout}>Déconnexion</Button>
               </>
             ) : (
               <Nav.Link as={Link} to="/login">Connexion</Nav.Link>
